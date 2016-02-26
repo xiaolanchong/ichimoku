@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block jscript %}
+<script language="javascript">
+	$(document).ready(function(){
+		$("#submitBtn").click(function () {
+			$("#wordtable > thead > tr").remove();
+			$("#wordtable > tbody > tr").remove();
+			var text = $("#submitTextBox").val();
+			var chunks = splitIntoChunks(text);
+			annotatedWords = [];
+			currentPage = 0; // start from the 1st page
+			populatePaginatedTable([]);
+			var merger = new ChunkMerger( 
+						function(chunk){
+							populatePaginatedTable(chunk);
+						}
+					);
+			chunks.forEach( function(chunk, index){
+				var unknownWordsOnly = $("#unknownWordsOnly").prop('checked') ? 1 : 0;
+				var addReading = $("#addReading").prop('checked') ? 1 : 0;
+				$.ajax({
+					type: 'post',
+					url: '/',
+					data: { "text" : chunk, 
+							"word" : 1, 
+							"reading" : addReading,
+							"definition" : 1, 
+							"sentence" : 1,
+							"unknownWordsOnly" : unknownWordsOnly
+						},
+					dataType: "json",
+					beforeSend:function(){
+					},
+					error: function(jqXHR, textStatus, errorThrown){
+					},
+					success: function(result, textStatus, jqXHR){
+						merger.addChunk(index, result);
+					}
+				});
+			});
+		});
+	});
+	$(function() {
+		$( "#dialog" ).dialog({
+           autoOpen: false,
+           modal: true,
+           height: 'auto',
+           width: 'auto',
+		  // resizable: false,
+		   buttons:{ 
+			"Ok" : function() {
+						readParametersAndAddCard();
+						// TODO: duplicated in utils.js
+						var addedImg = "{{STATIC_URL}}img/Ok-icon.png";
+						var el = $( this ).data('imgToChange');
+						$("img", el).attr("src", addedImg).unwrap();						
+						$( this ).dialog( "close" ); 
+					} ,
+					  
+			"Cancel" : function() { 
+							$( this ).dialog( "close" ); 
+						} 
+			}
+		});
+	});	
+</script>
+{% endblock %}
+{% block body %}
+{% include "header.html" %}
+{% include "header_band.html" with linkAnnotate=0 %}
+<div id="dialog" title="Word properties" style="font-size:small; display: none;">
+	<table width="100%" style="margin-left: auto;margin-right: auto;">
+		<tbody>
+			<tr>
+				<td colspan="2" style="text-align:center;padding-bottom:10px;"><span id="word" style="font-size:200%"></td>
+			</tr>
+			<tr>
+				<td>Reading</td>
+				<td class="col2"><input type="text" id="reading" style="width:100%;"></td>
+			</tr>
+			<tr>
+				<td>Definition</td>
+				<td class="col2"><textarea id="definition" style="width:100%;" >a</textarea></td>
+			</tr>
+			<tr>
+				<td>Example</td>
+				<td class="col2"><textarea id="example"  name="name" value="value" style="width:100%;" wrap="soft">a</textarea></td>
+			</tr>
+			<tr>
+				<td>Tags</td>
+				<td class="col2"><input type="text" id="tags" style="width:100%;"/></td>
+			</tr>			
+		</tbody>
+	</table>
+</div>
+<h4 style="color:gray;">Enter a text to annotate</h4>
+<div><textarea name="content" rows="5" cols="80" id="submitTextBox">読みたい日本語の文を入れる</textarea></div>
+<table style="padding:5px;"><tr>
+	<td style="margin-right: 20px;"><input type="button" value="Annotate" id="submitBtn"></td>
+	<td style="margin-right: 20px;">
+		<input type="checkbox" id="addReading"/>Reading
+		<input type="checkbox" id="addDefinition"/>Definition
+		<input type="checkbox" id="unknownWordsOnly"/>Show unknown words only
+	</td>
+</tr></table>
+<div id="submitStatus"></div>
+<div id="Pagination" class="pagination"></div>
+<br style="clear:both;" />
+<table id="wordtable">
+	<thead>
+	</thead>
+	<tbody>
+	</tbody>
+</table>
+{% endblock %}

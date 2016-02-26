@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load filter_extra %}
+
+{% block jscript %}
+<script src="{{STATIC_URL}}jscript/jquery.bpopup-0.8.0.min.js"></script>
+<script language="javascript">
+	var deckWords = [ 
+		{% autoescape off %}
+		{% for card in cards %}
+			[ '{{ card.word|addslashes }}', '{{ card.reading|addslashes}}', '{{ card.definition|addslashes}}', 
+			  '{{ card.example|addslashes }}', '{{ card.tag.all|sortbyname|join:", "|addslashes }}' ]{%if not forloop.last %},{% endif %}
+		{% endfor %}
+		{% endautoescape %}
+	];
+	
+	$(document).ready(function(){
+		$("#openExportWnd").click(function () {
+			$("#element_to_pop_up").bPopup({
+				fadeSpeed : "fast"
+			});
+		});
+		$("#exportBtn").click(function () {
+			var csvContent = "";
+			$('#wordtable > tbody > tr').filter(':has(:checkbox:checked)').each(function(){
+				//console.log(csvContent);
+				var line = "";
+				$('td', this).slice(0, -2).each(function() {
+					if(line.length) {
+						line += ";";
+					}
+					quotedText = $(this).text().replace(/\"/g, "\"\"");
+					quotedText = quotedText.replace(/\r|\n/g, " ");
+					line += "\"" + quotedText + "\"";
+				});
+				csvContent += line;
+				csvContent += "\n";
+			});
+			$("#element_to_pop_up").bPopup().close();
+			//console.log(csvContent);
+			submitFileContents(csvContent);
+		});	
+		$(".delCardImg").click(function(e) {
+			e.preventDefault();
+			var trElem = $(this).parent().parent().parent();
+			var wordToDelete = $("#word", trElem).text();
+			cardId = $(this).id().substring("card_".length);
+			$( "#deleteCard" ).data("cardId", cardId).data("trToDelete", trElem);
+			$( "#deleteCard > #word" ).text(wordToDelete);
+			$( "#deleteCard" ).dialog( "open" );
+			//.
+		});
+		$(".editCardImg").click(function(e) {
+			e.preventDefault();
+			var wordToEdit = $("#word", $(this).parent().parent().parent()).text();
+			//$( "#deleteCard > #word" ).text(wordToDelete);
+			//$( "#deleteCard" ).dialog( "open" );
+			//.
+		});	
+		$("#Pagination").pagination(deckWords.length, {
+			items_per_page: 30, 
+			num_edge_entries: 2,
+			callback:handlePaginationDeckClick
+		});
+		
+	});
+	
+	$(function() {
+		$( "#deleteCard" ).dialog({
+		   autoOpen: false,
+		   modal: true,
+		   height: 'auto',
+		   width: 'auto',
+		   buttons: { 
+				"Ok" : function() {
+							//readParametersAndAddCard();
+							$( this ).dialog( "close" ); 
+						},
+				"Cancel": function() { 
+							$( this ).dialog( "close" ); 
+						} 
+			}
+		});
+	});		
+
+</script>
+{% endblock %}
+{% block body %}
+{% include "header.html" %}
+{% include "header_band.html" with linkDeck=0 %}
+<h2>My Deck, total words: {{ cards.all.count }}</h2>
+<button id="openExportWnd">Export</button>
+<div id="element_to_pop_up">
+	<a class="bClose">x</a>
+	<fieldset>
+		<input type="checkbox" name="exportReading" checked>Reading<br>
+		<input type="checkbox" name="exportDefinition" checked>Definition<br>
+		<input type="checkbox" name="exportSentence" checked>Sentence
+	</fieldset>
+	<table>
+		<tr>
+			<td>Optional tag:</td>
+			<td><input type="text" name="optionalTag"></td>
+		</tr>
+		<tr>
+			<td>Filename:</td>
+			<td><input type="text" name="filename" value="deck.csv"></td>
+		</tr>
+	</table>
+	<button id="exportBtn">Export</button>
+</div>
+<div id="deleteCard" title="Delete the card" style="display: none;text-align:center;">
+	<div id="word" style="font-size: 200%;margin-bottom: 10px;"/></div>
+	<div>Delete the card and all its properies from the deck?<br>
+		<span style="color: #ff1010;font-size:75%">Warning: the operation cannot be undone.</span>
+	</div>
+</div>
+<div id="Pagination" class="pagination"></div>
+<br style="clear:both;" />
+<table id="wordtable">
+	<thead>
+		<tr>
+			<th>Word</th>
+			<th>Reading</th>
+			<th>Definition</th>
+			<th>Example</th>
+			<th>Tags</th>
+			<th>Edit options</th>
+			<th>Export</th>
+		</tr>
+	</thead>
+	<tbody>
+		
+		<!--
+		{% comment %}
+			<tr class="{% cycle 'odd' 'even' %}">
+				<td class="word" style="font-size:125%;" id="word">{{ card.word }}</td>
+				<td class="word">{{ card.reading }}</td>
+				<td>{{ card.definition }}</td>
+				<td>{{ card.example }}</td>
+				<td>{{ card.tag.all|sortbyname|join:", " }}</td>
+				<td style="text-align:center;">
+				    <a href="#"><img src="{{STATIC_URL}}img/edit_card.png" id="card_{{card.id}}" class="editCardImg" title="Edit the card"/></a>
+					<a href="#"><img src="{{STATIC_URL}}img/Close-2-icon.png" id="card_{{card.id}}" class="delCardImg" title="Delete the word from the deck"/></a>
+				</td>				
+				<td><input type="checkbox" checked></td>				
+			</tr>
+		{% endcomment %}
+		-->
+	</tbody>
+</table>
+
+{% endblock %}

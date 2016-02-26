@@ -1,0 +1,16 @@
+<table style="background-color: wheat;width:100%;">
+	<tr style="text-align:left;">
+		<td class="left">{% if linkAnnotate|default_if_none:1 %} <a href="/">Annotate</a> {% else %} Annotate {% endif %}</td>
+		<td class="left" > | </td>	
+		<td class="left">{% if linkDeck|default_if_none:1 %} <a href="/mydeck">My Deck</a> {% else %} My Deck {% endif %}</td>
+		<td class="left" > | </td>
+		<td class="left" style="margin-right:10px">{% if linkAbout|default_if_none:1 %} <a href="/about">About</a> {% else %} About {% endif %}</td>
+		<td>
+			<form name="input"  class="right" action="/signin" method="get">
+				E-mail: <input type="text" name="user">
+				Password: <input type="password" name="password">
+				<input type="submit" value="Sign in">				
+			</form> 
+		</td>
+	</tr>
+</table>
