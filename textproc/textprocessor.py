@@ -109,8 +109,14 @@ class TextProcessor:
             elif len(wordInfo.dictionaryForm):
                 alternatives = self.dictionary.getAllReadingAndDefinition(wordInfo.dictionaryForm)
                 alternatives = jdictProcessor.filterOnReading(alternatives, wordInfo.kanaReading)
-                reading, definition = jdictProcessor.getBestAlternative(alternatives, wordInfo.partOfSpeech)
-                result.append(IntermediateWordInfo(wordInfo.dictionaryForm, wordInfo.startPos, wordInfo.partOfSpeech, reading, definition))
+                try:
+                    reading, definition = jdictProcessor.getBestAlternative(alternatives, wordInfo.partOfSpeech)
+                    result.append(IntermediateWordInfo(wordInfo.dictionaryForm, wordInfo.startPos, wordInfo.partOfSpeech, reading, definition))
+                except Exception as e:
+                    result.append(
+                        IntermediateWordInfo.createNonWord(wordInfo.word, wordInfo.startPos, wordInfo.partOfSpeech))
+                    logging.error("Exception caught, word: %s, text: '%s', exception: %s",
+                                 wordInfo.word, self.getContext(text, wordInfo), str(e))
             else:
                 result.append(IntermediateWordInfo.createUnknownWord(wordInfo.word, wordInfo.startPos, wordInfo.partOfSpeech))
                 logging.info("'%s' not found in dictionary. Text: '%s'",
